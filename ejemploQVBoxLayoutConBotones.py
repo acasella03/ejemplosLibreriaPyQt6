@@ -2,11 +2,11 @@ import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
 
-class TerceraVentana(QMainWindow):
+class VentanaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Mi tercera ventana con Qt")
+        self.setWindowTitle("Ejemplo QVBoxLayout y QPushButton con Qt")
 
         # Creamos un widget central
         container = QWidget()
@@ -39,6 +39,6 @@ class TerceraVentana(QMainWindow):
 
 if __name__=="__main__":
     aplicacion = QApplication(sys.argv)
-    ventana = TerceraVentana()
+    ventana = VentanaPrincipal()
     ventana.show()
     sys.exit(aplicacion.exec())
