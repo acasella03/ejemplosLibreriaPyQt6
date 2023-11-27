@@ -69,12 +69,16 @@ class VentanaPrincipal (QMainWindow):
         grid2.addWidget(lblSaida,4, 0, 1, 1)
 
         cmbSon = QComboBox()
+        cmbSon.addItems(["Maracas", "Marimba", "Triángulo", "Timbales"])
+        cmbSon.currentTextChanged.connect(self.text_changed)
         grid2.addWidget(cmbSon,0,1,1,2)
         sldRitmo = QSlider(Qt.Orientation.Horizontal)
         grid2.addWidget(sldRitmo, 1, 1, 1, 2)
         sldVolume = QSlider(Qt.Orientation.Horizontal)
         grid2.addWidget(sldVolume, 2, 1, 1, 2)
         cmbFormato = QComboBox()
+        cmbFormato.addItems(["mp3", "wav", "wma", "ogg"])
+        cmbFormato.currentTextChanged.connect(self.text_changed)
         grid2.addWidget(cmbFormato, 3, 1, 1, 2)
         cmbSaida = QComboBox()
         grid2.addWidget(cmbSaida, 4, 1, 1, 2)
@@ -111,6 +115,8 @@ class VentanaPrincipal (QMainWindow):
 
         self.show()
 
+    def text_changed(self,s):
+        print(s)
 
 if __name__=="__main__":
     aplicacion = QApplication(sys.argv)
