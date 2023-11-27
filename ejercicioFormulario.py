@@ -3,9 +3,8 @@ import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel,QCheckBox,
                              QVBoxLayout, QHBoxLayout, QWidget, QListView, QLineEdit,
                              QComboBox, QGridLayout, QSlider, QFrame)
-from PyQt6.QtCore import Qt, QAbstractListModel
+from PyQt6.QtCore import Qt, QStringListModel
 from PyQt6.QtGui import QPixmap
-
 
 
 class VentanaPrincipal (QMainWindow):
@@ -28,9 +27,11 @@ class VentanaPrincipal (QMainWindow):
         caixa3.addWidget(lblIconoCd)
         chkAnimado = QCheckBox("Animado")
         caixa3.addWidget(chkAnimado)
-        lswLista = QListView()
-        lswLista.setFixedSize(300,200)
-        caixaH1.addWidget(lswLista)
+        self.lswLista = QListView()
+        self.lswLista.setFixedSize(300,200)
+        self.modelo_lista = QStringListModel() # Crear un modelo de lista para la QListView
+        self.lswLista.setModel(self.modelo_lista) # Asignar el modelo a la lista
+        caixaH1.addWidget(self.lswLista)
 
         caixa4 = QVBoxLayout()
         caixaH1.addLayout(caixa4)
@@ -94,19 +95,26 @@ class VentanaPrincipal (QMainWindow):
         caixa7 = QVBoxLayout()
         caixa5.addLayout(caixa6)
         caixa5.addLayout(caixa7)
-        chkAsincrono = QCheckBox ("Asíncrono")
-        chkENome = QCheckBox("É nome de ficheiro")
-        chkXml = QCheckBox("XML persistente")
-        caixa6.addWidget(chkAsincrono)
-        caixa6.addWidget(chkENome)
-        caixa6.addWidget(chkXml)
+        self.chkAsincrono = QCheckBox ("Asíncrono")
+        # Conectar la señal stateChanged del QCheckBox a la función correspondiente
+        self.chkAsincrono.clicked.connect(self.chkAsincrono_clicked)
+        self.chkENome = QCheckBox("É nome de ficheiro")
+        self.chkENome.clicked.connect(self.chkENome_clicked)
+        self.chkXml = QCheckBox("XML persistente")
+        self.chkXml.clicked.connect(self.chkXml_clicked)
+        caixa6.addWidget(self.chkAsincrono)
+        caixa6.addWidget(self.chkENome)
+        caixa6.addWidget(self.chkXml)
 
-        chkFiltrar = QCheckBox("Filtrar antes de reproducir")
-        chkEXml = QCheckBox("É XML")
-        chkReproduccion = QCheckBox("Reproducción NPL")
-        caixa7.addWidget(chkFiltrar)
-        caixa7.addWidget(chkEXml)
-        caixa7.addWidget(chkReproduccion)
+        self.chkFiltrar = QCheckBox("Filtrar antes de reproducir")
+        self.chkFiltrar.clicked.connect(self.chkFiltrar_clicked)
+        self.chkEXml = QCheckBox("É XML")
+        self.chkEXml.clicked.connect(self.chkEXml_clicked)
+        self.chkReproduccion = QCheckBox("Reproducción NPL")
+        self.chkReproduccion.clicked.connect(self.chkReproduccion_clicked)
+        caixa7.addWidget(self.chkFiltrar)
+        caixa7.addWidget(self.chkEXml)
+        caixa7.addWidget(self.chkReproduccion)
 
         container = QWidget()
         container.setLayout(caixaV)
@@ -117,6 +125,104 @@ class VentanaPrincipal (QMainWindow):
 
     def text_changed(self,s):
         print(s)
+
+    def chkAsincrono_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkAsincrono.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkAsincrono.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index=self.modelo_lista.index(self.modelo_lista.rowCount()-1)
+            self.modelo_lista.setData(index,text)
+        # else:
+            # Quitar el texto del modelo de la lista
+            #rows_to_remove = [index for index in range(self.model.rowCount()) if
+                              #self.model.data(self.model.index(index)) == text]
+            #for row in reversed(rows_to_remove):
+                #self.model.removeRow(row)
+
+    def chkENome_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkENome.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkENome.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index = self.modelo_lista.index(self.modelo_lista.rowCount() - 1)
+            self.modelo_lista.setData(index, text)
+        # else:
+        # Quitar el texto del modelo de la lista
+        # rows_to_remove = [index for index in range(self.model.rowCount()) if
+        # self.model.data(self.model.index(index)) == text]
+        # for row in reversed(rows_to_remove):
+        # self.model.removeRow(row)
+
+    def chkXml_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkXml.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkXml.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index = self.modelo_lista.index(self.modelo_lista.rowCount() - 1)
+            self.modelo_lista.setData(index, text)
+        # else:
+        # Quitar el texto del modelo de la lista
+        # rows_to_remove = [index for index in range(self.model.rowCount()) if
+        # self.model.data(self.model.index(index)) == text]
+        # for row in reversed(rows_to_remove):
+        # self.model.removeRow(row)
+
+    def chkFiltrar_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkFiltrar.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkFiltrar.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index = self.modelo_lista.index(self.modelo_lista.rowCount() - 1)
+            self.modelo_lista.setData(index, text)
+        # else:
+        # Quitar el texto del modelo de la lista
+        # rows_to_remove = [index for index in range(self.model.rowCount()) if
+        # self.model.data(self.model.index(index)) == text]
+        # for row in reversed(rows_to_remove):
+        # self.model.removeRow(row)
+
+    def chkEXml_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkEXml.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkEXml.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index = self.modelo_lista.index(self.modelo_lista.rowCount() - 1)
+            self.modelo_lista.setData(index, text)
+        # else:
+        # Quitar el texto del modelo de la lista
+        # rows_to_remove = [index for index in range(self.model.rowCount()) if
+        # self.model.data(self.model.index(index)) == text]
+        # for row in reversed(rows_to_remove):
+        # self.model.removeRow(row)
+
+    def chkReproduccion_clicked(self):
+        # Obtener el texto del QCheckBox
+        text = self.chkReproduccion.text()
+        # Verificar si el QCheckBox está marcado o no
+        if self.chkReproduccion.isChecked():
+            # Agregar el texto al modelo de la lista
+            self.modelo_lista.insertRow(self.modelo_lista.rowCount())
+            index = self.modelo_lista.index(self.modelo_lista.rowCount() - 1)
+            self.modelo_lista.setData(index, text)
+        # else:
+        # Quitar el texto del modelo de la lista
+        # rows_to_remove = [index for index in range(self.model.rowCount()) if
+        # self.model.data(self.model.index(index)) == text]
+        # for row in reversed(rows_to_remove):
+        # self.model.removeRow(row)
+
+
 
 if __name__=="__main__":
     aplicacion = QApplication(sys.argv)
