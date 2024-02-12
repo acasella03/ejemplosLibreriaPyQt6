@@ -64,6 +64,15 @@ class VentanaPrincipal(QMainWindow):
             self.modelo.removeRow(fila_seleccionada) #  Para eliminar la fila seleccionada del modelo
             self.modelo.submitAll() # Para enviar los cambios a la base de datos
             self.modelo.select() # Para actualizar la vista de la tabla y mostrar los cambios
+        else:
+            # USABILIDAD: Muestra un mensaje de advertencia si no hay fila seleccionada
+            dialogo = QMessageBox(self) # se utilizará para mostrar la advertencia. El argumento self se pasa al constructor para indicar que el cuadro de diálogo pertenece a la ventana principal.
+            dialogo.setWindowTitle("ADVERTENCIA") # Se establece el título del cuadro de diálogo
+            dialogo.setText("Selecciona una fila para borrar.") # Se establece el texto del cuadro de diálogo con la advertencia deseada
+            boton = dialogo.exec() # Se ejecuta el cuadro de diálogo y se obtiene el botón presionado por el usuario. El valor de retorno boton será un valor que indica qué botón se presionó (en este caso, el botón "Ok").
+            # boton = QMessageBox.warning(self, "ADVERTENCIA", "Selecciona una fila para borrar.") # También se podría abreviar así. En lugar de llamar exec() ahora simplemente llamamos al método de diálogo y se crea el diálogo.
+            if boton == QMessageBox.StandardButton.Ok: # Se verifica si el botón presionado es el botón "Ok".
+                print("OK!") # Si es así, imprime "OK!" en la consola.
 
 if __name__ == "__main__":
     aplicacion = QApplication(sys.argv)
