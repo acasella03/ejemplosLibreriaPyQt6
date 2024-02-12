@@ -1,7 +1,7 @@
 import sys
 
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QComboBox,
-                             QWidget, QCheckBox, QHBoxLayout, QLineEdit, QTableView)
+                             QWidget, QCheckBox, QHBoxLayout, QLineEdit, QTableView, QMessageBox)
 from PyQt6.QtCore import Qt, QAbstractTableModel,QSize
 from PyQt6.QtSql import QSqlDatabase, QSqlTableModel, QSqlQueryModel, QSqlQuery
 
@@ -35,13 +35,16 @@ class VentanaPrincipal(QMainWindow):
         cajaH = QHBoxLayout()  # Creación de la caja horizontal
         cajaV.addLayout(cajaH) # Añade la caja horizontal a la caja vertical
         self.botonAceptar = QPushButton("Aceptar") # Creación del botón Aceptar
-        self.botonCancelar = QPushButton("Cancelar") # Creación del botón Borrar
+        self.botonCancelar = QPushButton("Cancelar") # Creación del botón Cancelar
+        self.botonBorrar = QPushButton("Borrar") # Creación del botón Borrar
         # añadir los botones a la caja horizontal
         cajaH.addWidget(self.botonAceptar) # Añade el botón Aceptar a la caja horizontal
-        cajaH.addWidget(self.botonCancelar) # Añade el botón Borrar a la caja horizontal
+        cajaH.addWidget(self.botonCancelar) # Añade el botón Cancelar a la caja horizontal
+        cajaH.addWidget(self.botonBorrar) # Añade el botón Borrar a la caja horizontal
         # Conexión de los botones con sus funciones
         self.botonAceptar.clicked.connect(self.on_botonAceptar_clicked) # Conexión del botón Aceptar con la función on_botonAceptar_clicked
         self.botonCancelar.clicked.connect(self.on_botonCancelar_clicked) # Conexión del botón Cancelar con la función on_botonCancelar_clicked
+        self.botonBorrar.clicked.connect(self.on_botonBorrar_clicked) # Conexión del botón Borrar con la función on_botonBorrar_clicked
 
         # Configuración del tamaño fijo de la ventana y visualización
         self.setMinimumSize(500, 300)
@@ -52,6 +55,15 @@ class VentanaPrincipal(QMainWindow):
 
     def on_botonCancelar_clicked(self): # Función que se ejecuta al pulsar el botón Cancelar
         self.modelo.revertAll() # Revierte los cambios del modelo
+
+    def on_botonBorrar_clicked(self, fila):
+        # Obtener el índice de la fila seleccionada de la tabla
+        fila_seleccionada = self.tabla.currentIndex().row()
+        if fila_seleccionada != -1:
+            # Borra la fila del modelo y aplica los cambios
+            self.modelo.removeRow(fila_seleccionada) #  Para eliminar la fila seleccionada del modelo
+            self.modelo.submitAll() # Para enviar los cambios a la base de datos
+            self.modelo.select() # Para actualizar la vista de la tabla y mostrar los cambios
 
 if __name__ == "__main__":
     aplicacion = QApplication(sys.argv)
