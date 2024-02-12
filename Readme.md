@@ -250,6 +250,7 @@ widget = QLabel("Hello")
 > Tenga en cuenta que si desea cambiar las propiedades de la fuente de un widget, generalmente es mejor obtener la fuente actual , actualizarla y luego volver a aplicarla. Esto garantiza que la fuente se mantenga en consonancia con las convenciones del escritorio.
 
 La alineación se especifica mediante el uso de una bandera(Flag) del Qt.espacio de nombres. Las banderas(Flag) disponibles para **alineación HORIZONTAL** son:
+
 | Bandera PyQt6 (nombre largo)  | Comportamiento                                      |
 |------------------------------ | --------------------------------------------------- |
 | Qt.AlignmentFlag.AlignLeft    | Se alinea con el borde izquierdo.                   |
@@ -258,6 +259,7 @@ La alineación se especifica mediante el uso de una bandera(Flag) del Qt.espacio
 | Qt.AlignmentFlag.AlignJustify | Justifica el texto en el espacio disponible.        |
 
 Las banderas disponibles para **alineación VERTICAL** son:
+
 | Bandera PyQt6 (nombre largo)  | Comportamiento                                    |
 | ----------------------------- |-------------------------------------------------- |
 | Qt.AlignmentFlag.AlignTop     | Se alinea con la parte superior.                  |
@@ -613,7 +615,7 @@ Se organizan los widgets uno encima del otro de forma lineal. Agregar un widget 
 
 ![QVBoxLayout, lleno de arriba a abajo](./DisenioImagen/QVBoxLayout.png)
 
-[Ejemplo de clases QVBoxLayout](./ejemploQVBoxLayoutConBotones.py)
+### [Ejemplo de clases QVBoxLayout](./ejemploQVBoxLayoutConBotones.py)
 
 ### 2. QHBoxLayout: widgets dispuestos horizontalmente.
 Es el mismo, excepto que se mueve horizontalmente. Agregar un widget lo agrega al lado derecho.
@@ -688,7 +690,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 ```
 
-[Ejemplo de clases QGridLayout](.//ejemploGridLayout.py)
+### [Ejemplo de clases QGridLayout](.//ejemploGridLayout.py)
 
 ### 5. QStackedLayout: múltiples widgets en el mismo espacio.
 Permite colocar elementos directamente uno frente al otro. Luego puede seleccionar qué widget desea mostrar. Podrías usar esto para dibujar capas en una aplicación de gráficos o para imitar una interfaz tipo pestaña. Tenga en cuenta que también existe **QStackedWidget** un widget contenedor que funciona exactamente de la misma manera. Esto es útil si desea agregar una pila directamente a un **QMainWindow** con `.setCentralWidget`.
@@ -720,7 +722,7 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 ```
-[Ejemplo de clases QStackedLayout](./ejemploQStackedLayout.py)
+### [Ejemplo de clases QStackedLayout](./ejemploQStackedLayout.py)
 
 Así es exactamente como funcionan las vistas con pestañas en las aplicaciones. Sólo una vista ("pestaña") es visible a la vez. Puede controlar qué widget mostrar en cualquier momento usando `.setCurrentIndex()` o `.setCurrentWidget()` configurando el elemento por el índice (en el orden en que se agregaron los widgets) o por el propio widget.
 
@@ -843,4 +845,274 @@ Como puede ver, es un poco más sencillo y un poco más atractivo. Puede estable
 tabs = QTabWidget()
 tabs.setDocumentMode(True)
 ```
-[Ejemplo de clases QTabWidget](./ejemploQTabWidget.py)
+### [Ejemplo de clases QTabWidget](./ejemploQTabWidget.py)
+
+## Arquitectura ModelView
+### QTableView: [Ejemplo de clases QTableView](./ejemploQTableView.py)
+Es un widget de vista Qt que **presenta datos en una vista de tabla similar a una hoja de cálculo**. 
+Como todos los widgets en Model View Architecture, este **utiliza un modelo separado** para proporcionar 
+datos e información de presentación a la vista. **Los datos en el modelo se pueden actualizar** según sea
+necesario y la vista notificada de estos cambios para volver a dibujar/mostrar los cambios. Al personalizar 
+el modelo, es posible tener un gran control sobre cómo se presentan los datos.
+
+**Para utilizar el modelo necesitaremos una estructura de aplicación básica y algunos datos ficticios**. 
+A continuación se muestra un ejemplo de trabajo simple, que define un modelo personalizado que funciona 
+con una lista anidada simple como almacén de datos.
+```
+import sys
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import Qt
+
+
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            # Consulta a continuación la estructura de datos de lista anidada.
+            # .row() indexa en la lista externa,
+            # .column() indexa en la sublista
+            return self._data[index.row()][index.column()]
+
+    def rowCount(self, index):
+        # La longitud de la lista externa.
+        return len(self._data)
+
+    def columnCount(self, index):
+        # Lo siguiente toma la primera sublista y devuelve
+        # la longitud (solo funciona si todas las filas tienen la misma longitud)
+        return len(self._data[0])
+
+
+class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.table = QtWidgets.QTableView()
+
+        data = [
+          [4, 9, 2],
+          [1, 0, 0],
+          [3, 5, 0],
+          [3, 3, 2],
+          [7, 8, 9],
+        ]
+
+        self.model = TableModel(data)
+        self.table.setModel(self.model)
+
+        self.setCentralWidget(self.table)
+
+
+app=QtWidgets.QApplication(sys.argv)
+window=MainWindow()
+window.show()
+app.exec()
+```
+Como en nuestros ejemplos anteriores de vista de modelo, creamos el widget **QTableView**, 
+luego creamos una instancia de nuestro modelo personalizado (que hemos escrito para aceptar la fuente de datos como parámetro) 
+y luego configuramos el modelo en la vista. Eso es todo lo que necesitamos hacer: el widget de vista ahora usa el modelo para 
+obtener los datos y determinar cómo dibujarlos.
+![QTableView](./WidgetsImagen/QTableView.png)
+
+Para una tabla **necesitas una estructura de datos 2D, con columnas y filas**. Como se muestra en el ejemplo anterior, 
+puedes modelar una estructura de datos 2D simple usando un Python anidado `list`. Nos tomaremos un minuto para analizar 
+esta estructura de datos y sus limitaciones a continuación:
+```
+table = [
+  [4, 1, 3, 3, 7],
+  [9, 1, 5, 3, 8],
+  [2, 1, 5, 3, 9],
+]
+```
+### `list` Anidado como un almacén de datos bidimensional:
+La lista anidada es una **"lista de listas de valores"**, una lista externa que contiene una serie de sublistas 
+que a su vez contienen los valores. Con esta estructura, para indexar en valores individuales (o "celdas") debe 
+indexar dos veces, primero para devolver uno de los objetos `list` internos y luego nuevamente para indexar en 
+ese `list`.
+
+La disposición típica es que la ***lista externa*** contenga las ***filas*** y cada ***lista anidada** contenga 
+los valores de las ***columnas***. Con esta disposición, cuando indexa, **indexa primero por fila y luego por columna**, 
+lo que convierte nuestro ***ejemplo table*** en una ***tabla de 3 filas y 5 columnas***. Afortunadamente, esto coincide 
+con el diseño visual del código fuente.
+
+El primer índice de la tabla devolverá una sublista anidada:
+```
+fila = 2
+columna = 4
+
+>>> table[fila]
+[2, 1, 5, 3, 9]
+```
+Que luego indexas nuevamente para devolver el valor:
+```
+>>> table[fila][columna]
+9
+```
+Tenga en cuenta que al utilizar **este tipo de estructura no puede devolver fácilmente una columna completa**; 
+en su lugar, deberá iterar todas las filas. **Sin embargo, por supuesto, usted es libre de darle la vuelta a 
+las cosas y usar el primer índice como columna** dependiendo de si le resulta más útil acceder por columna o fila.
+```
+table = [
+  [4, 9, 2],
+  [1, 1, 1],
+  [3, 5, 5],
+  [3, 3, 2],
+  [7, 8, 9],
+]
+
+fila = 4  # al revés
+columna = 2  # al revés
+
+>>> table[columna]
+[3, 5, 5]
+
+>>> table[columna][fila]
+9
+```
+### `QAbstractTableModel` Escribiendo una costumbre:
+En la *arquitectura de vista de modelo*, el **modelo es responsable de proporcionar tanto los datos como los metadatos** 
+de presentación para que los muestre la vista. **Para interactuar** entre nuestro objeto de datos y la vista, **necesitamos 
+escribir nuestro propio modelo personalizado**, que comprenda la estructura de nuestros datos.
+
+Para **escribir nuestro modelo personalizado podemos crear una subclase de QAbstractTableModel**. Los únicos métodos necesarios 
+para un modelo de tabla personalizado son `data` , `rowCount` y `columnCount`. El **primero devuelve datos** (o información de presentación)
+para ubicaciones determinadas en la tabla, mientras que **los dos últimos deben devolver un valor entero único para las dimensiones de la 
+fuente de datos**.
+
+> [!IMPORTANT]
+> `QtCore.QAbstractTableModel` Es una *clase base abstracta*, lo que significa que **NO tiene implementaciones para los métodos**. 
+> Si intentas usarlo directamente, no funcionará. Debes subclasificarlo.
+
+En el constructor `__init__` aceptamos un único parámetro `data` que almacenamos como atributo de instancia `self._data` 
+para que podamos acceder a él desde nuestros métodos. La estructura de datos pasada se almacena por referencia, por lo que cualquier 
+cambio externo se reflejará aquí.
+
+> [!NOTE]
+> Para notificar al modelo sobre los cambios, debe activar la señal `layoutChanged` del modelo usando `self.model.layoutChanged.emit()`. 
+> Consulte el [tutorial anterior de ModelView para obtener más información](https://www.pythonguis.com/tutorials/modelview-architecture/).
+
+El método `data` se llama con dos valores `index` y `role`. El parámetro `index` proporciona la ubicación en la tabla para la que se solicita 
+información actualmente y tiene dos métodos `.row()` y `.column()` que proporcionan el número de fila y columna en la vista respectivamente. 
+En nuestro ejemplo, los datos se almacenan como una lista anidada y los índices de filas y columnas se utilizan para indexar de la siguiente 
+manera `data[row][column]`.
+
+El parámetro `role` **describe qué tipo de información debe devolver el método en esta llamada**. Para obtener los datos para mostrar la vista, 
+llame a este método de modelo con la opción `Qt.ItemDataRole.DisplayRole`. Sin embargo, `role` puede tener muchos otros valores, incluidos 
+`Qt.ItemDataRole.BackgroundRole` , `Qt.ItemDataRole.CheckStateRole` , `Qt.ItemDataRole.DecorationRole` cada uno de los cuales espera valores 
+particulares como respuesta.
+
+Los dos métodos personalizados `columnCount` y `rowCount` **devuelven el número de columnas y filas en nuestra estructura de datos**. 
+En el caso de la disposición `list` anidado que estamos usando aquí, **el número de filas es simplemente el número de elementos en la lista externa, 
+y el número de columnas es el número de elementos en una de las listas internas**, suponiendo que son todos iguales.
+
+Para más opciones del `QAbstractTableModel`[pulsar aquí](https://www.pythonguis.com/tutorials/pyqt6-qtableview-modelviews-numpy-pandas/)
+
+## USABILIDAD
+### [Documento De Clase sobre Usabilidad](EstudioInterfacesGraficasUsuario(Usabilidad).pdf)
+
+### 1. QMessageBox: Diálogos de mensajes simples
+Esto se puede utilizar para crear cuadros de diálogo de **información, advertencia o preguntas**.
+```
+import sys
+
+from PyQt6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QPushButton
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("My App")
+
+        button = QPushButton("Press me for a dialog!")
+        button.clicked.connect(self.button_clicked)
+        self.setCentralWidget(button)
+
+    def button_clicked(self, s):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("I have a question!")
+        dlg.setText("This is a simple dialog")
+        button = dlg.exec()
+
+        if button == QMessageBox.StandardButton.Ok:
+            print("OK!")
+
+app = QApplication(sys.argv)
+
+window = MainWindow()
+window.show()
+
+app.exec()
+```
+¡Ejecutarlo! Verá un cuadro de diálogo simple con un **botón Aceptar**.
+
+![QMessageBox](./MensajesImagen/QMessageBox.png)
+
+La lista completa de tipos de botones disponibles se muestra a continuación:
+* QMessageBox.StandardButton.Ok
+* QMessageBox.StandardButton.Open
+* QMessageBox.StandardButton.Save
+* QMessageBox.StandardButton.Cancel
+* QMessageBox.StandardButton.Close
+* QMessageBox.StandardButton.Discard
+* QMessageBox.StandardButton.Apply
+* QMessageBox.StandardButton.Reset
+* QMessageBox.StandardButton.RestoreDefaults
+* QMessageBox.StandardButton.Help
+* QMessageBox.StandardButton.SaveAll
+* QMessageBox.StandardButton.Yes
+* QMessageBox.StandardButton.YesToAll
+* QMessageBox.StandardButton.No
+* QMessageBox.StandardButton.NoToAll
+* QMessageBox.StandardButton.Abort
+* QMessageBox.StandardButton.Retry
+* QMessageBox.StandardButton.Ignore
+* QMessageBox.StandardButton.NoButton
+
+Puede construir una **línea de varios botones** uniéndolos mediante una operación **OR mediante una tubería (|)**. Qt manejará el pedido automáticamente, según los estándares de la plataforma.
+**Por ejemplo, para mostrar un botón Sí y No usamos**:
+```
+buttons = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+```
+**También puede modificar el ícono** que se muestra en el cuadro de diálogo configurándolo con una de las siguientes opciones:
+
+| Estado del icono             | Descripción                                 |
+|------------------------------|---------------------------------------------|
+| QMessageBox.Icon.NoIcon      | El cuadro de mensaje no tiene ningún icono. |
+| QMessageBox.Icon.Question    | El mensaje hace una pregunta.               |
+| QMessageBox.Icon.Information | El mensaje es sólo informativo.             |
+| QMessageBox.Icon.Warning     | El mensaje es de advertencia.               |
+| QMessageBox.Icon.Critical    | El mensaje indica un problema crítico.      |
+
+Por ejemplo, lo siguiente crea un cuadro de diálogo de preguntas con los botones Sí y No.
+```
+def button_clicked(self, s):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("I have a question!")
+        dlg.setText("This is a question dialog")
+        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        dlg.setIcon(QMessageBox.Icon.Question)
+        button = dlg.exec()
+
+        if button == QMessageBox.Yes:
+            print("Yes!")
+        else:
+            print("No!")
+```
+¡Ejecutarlo! Verá un cuadro de diálogo de preguntas con los **botones Sí y No**.
+![QMessageBox con Icono](./MensajesImagen/QMessageBox_con_Icono.png)
+
+**Para simplificar aún más las cosas**, QMessageBoxtiene varios métodos que se pueden utilizar para construir este tipo de diálogos de mensajes.
+Estos métodos se muestran a continuación:
+* QMessageBox.about(parent, title, message)
+* QMessageBox.critical(parent, title, message)
+* QMessageBox.information(parent, title, message)
+* QMessageBox.question(parent, title, message)
+* QMessageBox.warning(parent, title, message)
+
+El parámetro `parent` es la ventana de la que será hijo el diálogo. **Si está iniciando su cuadro de diálogo desde su ventana principal, puede simplemente pasar self**.
+
+### [Ejemplo de clases QMessageBox](./ejemploQtSQLTableModel.py)
