@@ -18,16 +18,16 @@ class MyMainWindow(QMainWindow):
         self.init_ui()
 
     def init_database(self):
-        db = QSqlDatabase("QSQLITE")
-        db.setDatabaseName("baseDatos2.dat")
+        self.db = QSqlDatabase("QSQLITE")
+        self.db.setDatabaseName("baseDatos2.dat")
 
-        if not db.open():
+        if not self.db.open():
             QMessageBox.critical(self, "Error", "No se pudo abrir la base de datos")
             sys.exit(1)
 
     def init_table_model(self):
-        self.table_model = QSqlTableModel()
-        self.table_model.setTable("ejemplo")
+        self.table_model = QSqlTableModel(db=self.db)
+        self.table_model.setTable("usuarios")
         self.table_model.select()
 
     def init_ui(self):
@@ -78,7 +78,7 @@ class MyMainWindow(QMainWindow):
         self.cancel_button = cancel_button
 
     def filter_table(self, text):
-        filter_string = f"Nombre LIKE '%{text}%' OR Edad LIKE '%{text}%' OR Ciudad LIKE '%{text}%'"
+        filter_string = f"dni LIKE '%{text}%' OR nome LIKE '%{text}%' OR edade LIKE '%{text}%' OR xenero LIKE '%{text}%'"
         self.table_model.setFilter(filter_string)
 
     def add_record(self):
