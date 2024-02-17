@@ -173,8 +173,37 @@ class MyMainWindow(QMainWindow):
         selected_rows = self.centralWidget().findChild(QTableView).selectionModel().selectedRows()
 
         if selected_rows:
-            for index in selected_rows:
-                self.table_model.removeRow(index.row())
+            reply = QMessageBox.question(self, "Confirmación", "¿Estás seguro que quieres borrar los datos?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+            if reply == QMessageBox.StandardButton.Yes:
+                for index in selected_rows:
+                    self.table_model.removeRow(index.row())
+
+                # Limpiar campos y deshabilitar botón Guardar
+                self.dni_line_edit.clear()
+                self.nome_line_edit.clear()
+                self.edade_line_edit.clear()
+                self.xenero_combobox.setCurrentIndex(0)
+                self.falecido_combobox.setCurrentIndex(0)
+                self.dni_line_edit.setEnabled(False)
+                self.nome_line_edit.setEnabled(False)
+                self.edade_line_edit.setEnabled(False)
+                self.xenero_combobox.setEnabled(False)
+                self.falecido_combobox.setEnabled(False)
+                self.add_button.setEnabled(True)
+                self.save_button.setEnabled(False)
+                self.delete_button.setEnabled(True)
+                self.cancel_button.setEnabled(False)
+                self.success_label.setText("<html><b style='color: red;'>BORRADO EXITOSO</b></html>")
+            else:
+                # Si el usuario elige no borrar, mantener los campos y habilitar el botón Agregar
+                self.add_button.setEnabled(True)
+                self.save_button.setEnabled(False)
+                self.delete_button.setEnabled(True)
+                self.cancel_button.setEnabled(False)
+        else:
+            QMessageBox.warning(self, "Advertencia", "Selecciona al menos una fila para borrar.\nPulsa en el número de la fila.")
 
     def cancel_changes(self):
         reply = QMessageBox.question(self, "Confirmación", "¿Estás seguro que quieres borrar los datos introducidos?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
