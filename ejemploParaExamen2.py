@@ -157,6 +157,12 @@ class MyMainWindow(QMainWindow):
         self.table_model.setData(self.table_model.index(row, 3), xenero)
         self.table_model.setData(self.table_model.index(row, 4), falecido)
 
+        # Aplicar cambios a la base de datos
+        self.table_model.submitAll()
+
+        # Actualizar el modelo para reflejar los cambios en la tabla
+        self.table_model.select()
+
         # Limpiar campos y deshabilitar botón Guardar
         self.dni_line_edit.clear()
         self.nome_line_edit.clear()
@@ -170,6 +176,7 @@ class MyMainWindow(QMainWindow):
         self.falecido_combobox.setEnabled(False)
         self.add_button.setEnabled(True)
         self.save_button.setEnabled(False)
+        self.delete_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
 
         # Mostrar mensaje de éxito
@@ -185,6 +192,9 @@ class MyMainWindow(QMainWindow):
             if reply == QMessageBox.StandardButton.Yes:
                 for index in selected_rows:
                     self.table_model.removeRow(index.row())
+
+                # Actualizar el modelo para reflejar los cambios en la tabla
+                self.table_model.select()
 
                 # Limpiar campos y deshabilitar botón Guardar
                 self.dni_line_edit.clear()
