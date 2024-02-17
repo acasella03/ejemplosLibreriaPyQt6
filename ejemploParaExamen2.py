@@ -193,6 +193,7 @@ class MyMainWindow(QMainWindow):
             self.falecido_combobox.setEnabled(False)
             self.add_button.setEnabled(True)
             self.save_button.setEnabled(False)
+            self.delete_button.setEnabled(True)
             self.cancel_button.setEnabled(False)
             self.success_label.clear()
         else:
