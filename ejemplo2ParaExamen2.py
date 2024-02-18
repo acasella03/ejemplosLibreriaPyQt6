@@ -52,7 +52,9 @@ class MyMainWindow(QMainWindow):
 
     def init_data(self):
         self.header_data = ["DNI", "Nome", "Edade", "Xenero", "Falecido"]
-        self.data = []
+        self.data = [["111", "Juan", "25", "Home", "No"],
+                     ["222", "Maria", "30", "Muller", "Sí"],
+                     ["333", "Carlos", "40", "Home", "No"]]
 
     def init_ui(self):
         central_widget = QWidget(self)
