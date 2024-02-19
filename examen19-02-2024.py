@@ -176,11 +176,11 @@ class MyMainWindow(QMainWindow):
         self.table_model.setData(self.table_model.index(row, 0), nCliente)
         self.table_model.setData(self.table_model.index(row, 1), nome)
         self.table_model.setData(self.table_model.index(row, 2), apelidos)
-        self.table_model.setData(self.table_model.index(row, 3), direccion)
-        self.table_model.setData(self.table_model.index(row, 4), cidade)
-        self.table_model.setData(self.table_model.index(row, 5), provincia)
-        self.table_model.setData(self.table_model.index(row, 6), codigoPostal)
-        self.table_model.setData(self.table_model.index(row, 7), telefono)
+        self.table_model.setData(self.table_model.index(row, 3), telefono)
+        self.table_model.setData(self.table_model.index(row, 4), direccion)
+        self.table_model.setData(self.table_model.index(row, 5), cidade)
+        self.table_model.setData(self.table_model.index(row, 6), provincia)
+        self.table_model.setData(self.table_model.index(row, 7), codigoPostal)
 
 
         # Aplicar cambios a la base de datos
@@ -307,11 +307,11 @@ class MyMainWindow(QMainWindow):
                         nCliente = str(self.table_model.index(row, 0).data())
                         nome = str(self.table_model.index(row, 1).data())
                         apelidos = str(self.table_model.index(row, 2).data())
-                        direccion = str(self.table_model.index(row, 3).data())
-                        cidade = str(self.table_model.index(row, 4).data())
-                        provincia = str(self.table_model.index(row, 5).data())
-                        codigoPostal = str(self.table_model.index(row, 6).data())
-                        telefono = str(self.table_model.index(row, 7).data())
+                        telefono = str(self.table_model.index(row, 3).data())
+                        direccion = str(self.table_model.index(row, 4).data())
+                        cidade = str(self.table_model.index(row, 5).data())
+                        provincia = str(self.table_model.index(row, 6).data())
+                        codigoPostal = str(self.table_model.index(row, 7).data())
 
                         # Rellenar líneas de texto con los datos seleccionados
                         self.nCliente_line_edit.setText(nCliente)
@@ -378,11 +378,12 @@ class MyMainWindow(QMainWindow):
                     self.table_model.setData(self.table_model.index(row, 0), nCliente)
                     self.table_model.setData(self.table_model.index(row, 1), nome)
                     self.table_model.setData(self.table_model.index(row, 2), apelidos)
-                    self.table_model.setData(self.table_model.index(row, 3), direccion)
-                    self.table_model.setData(self.table_model.index(row, 4), cidade)
-                    self.table_model.setData(self.table_model.index(row, 5), provincia)
-                    self.table_model.setData(self.table_model.index(row, 6), codigoPostal)
-                    self.table_model.setData(self.table_model.index(row, 7), telefono)
+                    self.table_model.setData(self.table_model.index(row, 3), telefono)
+                    self.table_model.setData(self.table_model.index(row, 4), direccion)
+                    self.table_model.setData(self.table_model.index(row, 5), cidade)
+                    self.table_model.setData(self.table_model.index(row, 6), provincia)
+                    self.table_model.setData(self.table_model.index(row, 7), codigoPostal)
+
                     self.table_model.submitAll()  # Guardar cambios en la base de datos
 
                     # Deshabilitar líneas de texto y habilitar/deshabilitar/agregar/eliminar botones según sea necesario
