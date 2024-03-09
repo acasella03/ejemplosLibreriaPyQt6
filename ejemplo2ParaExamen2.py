@@ -1,60 +1,86 @@
+# NO FUNCIONA!!!!!!
 import sys
-from PyQt6.QtCore import Qt, QModelIndex, QAbstractTableModel
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QTableView, QLineEdit, QLabel, QMessageBox, QComboBox
+from PyQt6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PyQt6.QtSql import QSqlDatabase, QSqlQuery
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QTableView, QLineEdit, QLabel, QMessageBox, QGridLayout
 
-class MyTableModel(QAbstractTableModel):
-    def __init__(self, data, header_data, parent=None):
-        super().__init__(parent)
-        self._data = data
-        self._header_data = header_data
+class ModeloTabla(QAbstractTableModel):
+    def __init__(self, db):
+        super().__init__()
+        self.db = db
+        self.query = QSqlQuery(self.db)
+        self.headers = []
+        self.load_data()
 
-    def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+    def load_data(self):
+        self.query.exec("SELECT * FROM clientes")
+        self.headers = [self.query.record().fieldName(i) for i in range(self.query.record().count())]
+        self.data = [list(self.query.record().values()) for _ in range(self.query.size())]
 
-    def columnCount(self, parent=QModelIndex()):
-        return len(self._data[0]) if self._data else 0
+    def rowCount(self, index):
+        return len(self.data)
 
-    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if role == Qt.ItemDataRole.DisplayRole or role == Qt.ItemDataRole.EditRole:
-            return self._data[index.row()][index.column()]
+    def columnCount(self, index):
+        return len(self.headers)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        if role == Qt.ItemDataRole.DisplayRole:
+            return self.data[index.row()][index.column()]
         return None
 
-    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
-        if role == Qt.ItemDataRole.DisplayRole:
-            if orientation == Qt.Orientation.Horizontal:
-                return self._header_data[section]
-            else:
-                return str(section + 1)
+    def headerData(self, section, orientation, role):
+        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
+            return self.headers[section]
+        return None
 
-    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+    def flags(self, index):
+        return Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
+
+    def setData(self, index, value, role):
         if role == Qt.ItemDataRole.EditRole:
-            self._data[index.row()][index.column()] = value
+            self.data[index.row()][index.column()] = value
+            self.update_database(index, value)
             self.dataChanged.emit(index, index)
             return True
         return False
 
-    def flags(self, index):
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
-
+    def update_database(self, index, value):
+        query = QSqlQuery(self.db)
+        query.prepare("UPDATE clientes SET {} = :value WHERE id = :id".format(self.headers[index.column()]))
+        query.bindValue(":value", value)
+        query.bindValue(":id", self.data[index.row()][0]) # Asumiendo que 'id' es el primer campo
+        query.exec_()
 
 class MyMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Ejemplo de Interfaz")
-        self.setGeometry(100, 100, 560, 700)
+        self.setWindowTitle("Examen 19-02-2024 con QAbstractTableModel")
+        self.setGeometry(100, 100, 1100, 800)
 
-        # Inicializar la tabla de datos
-        self.init_data()
+        # Inicializar la base de datos y la tabla
+        self.init_database()
+        self.init_table_model()
 
         # Crear la interfaz
         self.init_ui()
 
-    def init_data(self):
-        self.header_data = ["DNI", "Nome", "Edade", "Xenero", "Falecido"]
-        self.data = [["111", "Juan", "25", "Home", "No"],
-                     ["222", "Maria", "30", "Muller", "Sí"],
-                     ["333", "Carlos", "40", "Home", "No"]]
+    def init_database(self):
+        self.db = QSqlDatabase("QSQLITE")
+        self.db.setDatabaseName("modelosClasicos.dat")
+
+        if not self.db.open():
+            QMessageBox.critical(self, "Error", "No se pudo abrir la base de datos")
+            sys.exit(1)
+
+    def init_table_model(self):
+        # Inicializa table_view como una instancia de QTableView
+        self.table_view = QTableView()
+        self.table_model = ModeloTabla(db=self.db)
+        self.table_view.setModel(self.table_model)
+        self.table_view.reset()
 
     def init_ui(self):
         central_widget = QWidget(self)
@@ -63,39 +89,55 @@ class MyMainWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
 
         # Etiquetas y líneas de texto para los datos
-        dni_label = QLabel("DNI:")
-        self.dni_line_edit = QLineEdit()
-        layout.addWidget(dni_label)
-        layout.addWidget(self.dni_line_edit)
+        nCliente_label = QLabel("Número Cliente:")
+        self.nCliente_line_edit = QLineEdit()
+        layout.addWidget(nCliente_label)
+        layout.addWidget(self.nCliente_line_edit)
 
         nome_label = QLabel("Nome:")
         self.nome_line_edit = QLineEdit()
         layout.addWidget(nome_label)
         layout.addWidget(self.nome_line_edit)
 
-        edade_label = QLabel("Edade:")
-        self.edade_line_edit = QLineEdit()
-        layout.addWidget(edade_label)
-        layout.addWidget(self.edade_line_edit)
+        apelidos_label = QLabel("Apelidos:")
+        self.apelidos_line_edit = QLineEdit()
+        layout.addWidget(apelidos_label)
+        layout.addWidget(self.apelidos_line_edit)
 
-        xenero_label = QLabel("Xenero:")
-        self.xenero_combobox = QComboBox()
-        self.xenero_combobox.addItems(["Home", "Muller", "Outros"])
-        layout.addWidget(xenero_label)
-        layout.addWidget(self.xenero_combobox)
+        direccion_label = QLabel("Dirección:")
+        self.direccion_line_edit = QLineEdit()
+        layout.addWidget(direccion_label)
+        layout.addWidget(self.direccion_line_edit)
 
-        falecido_label = QLabel("Falecido:")
-        self.falecido_combobox = QComboBox()
-        self.falecido_combobox.addItems(["Sí", "No"])
-        layout.addWidget(falecido_label)
-        layout.addWidget(self.falecido_combobox)
+        cidade_label = QLabel("Cidade:")
+        self.cidade_line_edit = QLineEdit()
+        layout.addWidget(cidade_label)
+        layout.addWidget(self.cidade_line_edit)
+
+        provincia_label = QLabel("Provincia:")
+        self.provincia_line_edit = QLineEdit()
+        layout.addWidget(provincia_label)
+        layout.addWidget(self.provincia_line_edit)
+
+        codigoPostal_label = QLabel("Código Postal:")
+        self.codigoPostal_line_edit = QLineEdit()
+        layout.addWidget(codigoPostal_label)
+        layout.addWidget(self.codigoPostal_line_edit)
+
+        telefono_label = QLabel("Teléfono:")
+        self.telefono_line_edit = QLineEdit()
+        layout.addWidget(telefono_label)
+        layout.addWidget(self.telefono_line_edit)
 
         # Deshabilitar líneas de texto inicialmente
-        self.dni_line_edit.setEnabled(False)
+        self.nCliente_line_edit.setEnabled(False)
         self.nome_line_edit.setEnabled(False)
-        self.edade_line_edit.setEnabled(False)
-        self.xenero_combobox.setEnabled(False)
-        self.falecido_combobox.setEnabled(False)
+        self.apelidos_line_edit.setEnabled(False)
+        self.direccion_line_edit.setEnabled(False)
+        self.cidade_line_edit.setEnabled(False)
+        self.provincia_line_edit.setEnabled(False)
+        self.codigoPostal_line_edit.setEnabled(False)
+        self.telefono_line_edit.setEnabled(False)
 
         # Buscador
         search_label = QLabel("Buscar:")
@@ -105,10 +147,8 @@ class MyMainWindow(QMainWindow):
         layout.addWidget(search_line_edit)
 
         # Tabla
-        self.table_model = MyTableModel(self.data, self.header_data)
-        table_view = QTableView()
-        table_view.setModel(self.table_model)
-        layout.addWidget(table_view)
+        self.table_view.setModel(self.table_model)
+        layout.addWidget(self.table_view)
 
         # Mensaje de éxito
         self.success_label = QLabel()
@@ -118,7 +158,7 @@ class MyMainWindow(QMainWindow):
         button_layout = QVBoxLayout()
 
         add_button = QPushButton("Agregar")
-        add_button.clicked.connect(self.start_adding)
+        add_button.clicked.connect(self.start_adding)  # Conectar botón Agregar
         button_layout.addWidget(add_button)
 
         save_button = QPushButton("Guardar")
@@ -150,40 +190,78 @@ class MyMainWindow(QMainWindow):
         self.edit_button = edit_button
 
     def filter_table(self, text):
-        self.table_model.setFilter(text)
+        filter_string = f"nCliente LIKE '%{text}%' OR nome LIKE '%{text}%' OR apelidos LIKE '%{text}%' OR direccion LIKE '%{text}%' OR direccion LIKE '%{text}%' OR cidade LIKE '%{text}%' OR provincia LIKE '%{text}%' OR codigoPostal LIKE '%{text}%' OR telefono LIKE '%{text}%'"
+        self.table_model.setFilter(filter_string)
 
     def start_adding(self):
         # Habilitar líneas de texto y deshabilitar botón Agregar
-        self.dni_line_edit.setEnabled(True)
+        self.nCliente_line_edit.setEnabled(True)
         self.nome_line_edit.setEnabled(True)
-        self.edade_line_edit.setEnabled(True)
-        self.xenero_combobox.setEnabled(True)
-        self.falecido_combobox.setEnabled(True)
+        self.apelidos_line_edit.setEnabled(True)
+        self.direccion_line_edit.setEnabled(True)
+        self.cidade_line_edit.setEnabled(True)
+        self.provincia_line_edit.setEnabled(True)
+        self.codigoPostal_line_edit.setEnabled(True)
+        self.telefono_line_edit.setEnabled(True)
         self.add_button.setEnabled(False)
         self.save_button.setEnabled(True)
         self.delete_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
 
     def save_changes(self):
-        dni = self.dni_line_edit.text()
+        nCliente = self.nCliente_line_edit.text()
         nome = self.nome_line_edit.text()
-        edade = self.edade_line_edit.text()
-        xenero = self.xenero_combobox.currentText()
-        falecido = self.falecido_combobox.currentText()
+        apelidos = self.apelidos_line_edit.text()
+        direccion = self.direccion_line_edit.text()
+        cidade = self.cidade_line_edit.text()
+        provincia = self.provincia_line_edit.text()
+        codigoPostal = self.codigoPostal_line_edit.text()
+        telefono = self.telefono_line_edit.text()
 
-        if not dni or not nome or not edade or not xenero or not falecido:
+        if not nCliente or not nome or not apelidos or not direccion or not cidade or not provincia or not codigoPostal or not telefono:
             QMessageBox.warning(self, "Advertencia", "Todos los campos son obligatorios")
             return
 
-        new_data = [dni, nome, edade, xenero, falecido]
-        self.data.append(new_data)
-        self.table_model.insertRow(len(self.data) - 1)
+        row = self.table_model.rowCount()
+        self.table_model.insertRow(row)
+
+        self.table_model.setData(self.table_model.index(row, 0), nCliente)
+        self.table_model.setData(self.table_model.index(row, 1), nome)
+        self.table_model.setData(self.table_model.index(row, 2), apelidos)
+        self.table_model.setData(self.table_model.index(row, 3), telefono)
+        self.table_model.setData(self.table_model.index(row, 4), direccion)
+        self.table_model.setData(self.table_model.index(row, 5), cidade)
+        self.table_model.setData(self.table_model.index(row, 6), provincia)
+        self.table_model.setData(self.table_model.index(row, 7), codigoPostal)
+
+
+        # Aplicar cambios a la base de datos
+        self.table_model.submitAll()
 
         # Actualizar el modelo para reflejar los cambios en la tabla
-        self.table_model.layoutChanged.emit()
+        self.table_model.reset()
 
         # Limpiar campos y deshabilitar botón Guardar
-        self.clear_and_disable_fields()
+        self.nCliente_line_edit.clear()
+        self.nome_line_edit.clear()
+        self.apelidos_line_edit.clear()
+        self.direccion_line_edit.clear()
+        self.cidade_line_edit.clear()
+        self.provincia_line_edit.clear()
+        self.codigoPostal_line_edit.clear()
+        self.telefono_line_edit.clear()
+        self.nCliente_line_edit.setEnabled(False)
+        self.nome_line_edit.setEnabled(False)
+        self.apelidos_line_edit.setEnabled(False)
+        self.direccion_line_edit.setEnabled(False)
+        self.cidade_line_edit.setEnabled(False)
+        self.provincia_line_edit.setEnabled(False)
+        self.codigoPostal_line_edit.setEnabled(False)
+        self.telefono_line_edit.setEnabled(False)
+        self.add_button.setEnabled(True)
+        self.save_button.setEnabled(False)
+        self.delete_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
 
         # Mostrar mensaje de éxito
         self.success_label.setText("<html><b style='color: green;'>LOS DATOS SE HAN GUARDADO CORRECTAMENTE</b></html>")
@@ -197,15 +275,32 @@ class MyMainWindow(QMainWindow):
 
             if reply == QMessageBox.StandardButton.Yes:
                 for index in selected_rows:
-                    self.data.pop(index.row())
-
-                # Limpiar campos y deshabilitar botón Guardar
-                self.clear_and_disable_fields()
+                    self.table_model.removeRow(index.row())
 
                 # Actualizar el modelo para reflejar los cambios en la tabla
-                self.table_model.layoutChanged.emit()
+                self.table_model.reset()
 
-                # Mostrar mensaje de éxito
+                # Limpiar campos y deshabilitar botón Guardar
+                self.nCliente_line_edit.clear()
+                self.nome_line_edit.clear()
+                self.apelidos_line_edit.clear()
+                self.direccion_line_edit.clear()
+                self.cidade_line_edit.clear()
+                self.provincia_line_edit.clear()
+                self.codigoPostal_line_edit.clear()
+                self.telefono_line_edit.clear()
+                self.nCliente_line_edit.setEnabled(False)
+                self.nome_line_edit.setEnabled(False)
+                self.apelidos_line_edit.setEnabled(False)
+                self.direccion_line_edit.setEnabled(False)
+                self.cidade_line_edit.setEnabled(False)
+                self.provincia_line_edit.setEnabled(False)
+                self.codigoPostal_line_edit.setEnabled(False)
+                self.telefono_line_edit.setEnabled(False)
+                self.add_button.setEnabled(True)
+                self.save_button.setEnabled(False)
+                self.delete_button.setEnabled(True)
+                self.cancel_button.setEnabled(False)
                 self.success_label.setText("<html><b style='color: red;'>BORRADO EXITOSO</b></html>")
             else:
                 # Si el usuario elige no borrar, mantener los campos y habilitar el botón Agregar
@@ -221,7 +316,26 @@ class MyMainWindow(QMainWindow):
 
         if reply == QMessageBox.StandardButton.Yes:
             # Limpiar campos y deshabilitar botón Guardar
-            self.clear_and_disable_fields()
+            self.nCliente_line_edit.clear()
+            self.nome_line_edit.clear()
+            self.apelidos_line_edit.clear()
+            self.direccion_line_edit.clear()
+            self.cidade_line_edit.clear()
+            self.provincia_line_edit.clear()
+            self.codigoPostal_line_edit.clear()
+            self.telefono_line_edit.clear()
+            self.nCliente_line_edit.setEnabled(False)
+            self.nome_line_edit.setEnabled(False)
+            self.apelidos_line_edit.setEnabled(False)
+            self.direccion_line_edit.setEnabled(False)
+            self.cidade_line_edit.setEnabled(False)
+            self.provincia_line_edit.setEnabled(False)
+            self.codigoPostal_line_edit.setEnabled(False)
+            self.telefono_line_edit.setEnabled(False)
+            self.add_button.setEnabled(True)
+            self.save_button.setEnabled(False)
+            self.delete_button.setEnabled(True)
+            self.cancel_button.setEnabled(False)
             self.success_label.clear()
         else:
             # Si el usuario elige no borrar, mantener los campos y habilitar el botón Agregar
@@ -242,21 +356,34 @@ class MyMainWindow(QMainWindow):
                     if selected_indexes:
                         # Obtener datos de la fila seleccionada
                         row = selected_indexes[0].row()
-                        data = [str(self.table_model.index(row, col).data()) for col in range(self.table_model.columnCount())]
+                        nCliente = str(self.table_model.index(row, 0).data())
+                        nome = str(self.table_model.index(row, 1).data())
+                        apelidos = str(self.table_model.index(row, 2).data())
+                        telefono = str(self.table_model.index(row, 3).data())
+                        direccion = str(self.table_model.index(row, 4).data())
+                        cidade = str(self.table_model.index(row, 5).data())
+                        provincia = str(self.table_model.index(row, 6).data())
+                        codigoPostal = str(self.table_model.index(row, 7).data())
 
                         # Rellenar líneas de texto con los datos seleccionados
-                        self.dni_line_edit.setText(data[0])
-                        self.nome_line_edit.setText(data[1])
-                        self.edade_line_edit.setText(data[2])
-                        self.xenero_combobox.setCurrentText(data[3])
-                        self.falecido_combobox.setCurrentText(data[4])
+                        self.nCliente_line_edit.setText(nCliente)
+                        self.nome_line_edit.setText(nome)
+                        self.apelidos_line_edit.setText(apelidos)
+                        self.direccion_line_edit.setText(direccion)
+                        self.cidade_line_edit.setText(cidade)
+                        self.provincia_line_edit.setText(provincia)
+                        self.codigoPostal_line_edit.setText(codigoPostal)
+                        self.telefono_line_edit.setText(telefono)
 
                         # Habilitar líneas de texto y deshabilitar/agregar/eliminar/botones según sea necesario
-                        self.dni_line_edit.setEnabled(True)
+                        self.nCliente_line_edit.setEnabled(True)
                         self.nome_line_edit.setEnabled(True)
-                        self.edade_line_edit.setEnabled(True)
-                        self.xenero_combobox.setEnabled(True)
-                        self.falecido_combobox.setEnabled(True)
+                        self.apelidos_line_edit.setEnabled(True)
+                        self.direccion_line_edit.setEnabled(True)
+                        self.cidade_line_edit.setEnabled(True)
+                        self.provincia_line_edit.setEnabled(True)
+                        self.codigoPostal_line_edit.setEnabled(True)
+                        self.telefono_line_edit.setEnabled(True)
                         self.add_button.setEnabled(False)
                         self.save_button.setEnabled(False)
                         self.delete_button.setEnabled(False)
@@ -264,11 +391,14 @@ class MyMainWindow(QMainWindow):
                         self.edit_button.setText("Guardar Edición")
 
                         # Pintar el recuadro de las líneas de texto de color verde
-                        self.dni_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.nCliente_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
                         self.nome_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
-                        self.edade_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
-                        self.xenero_combobox.setStyleSheet("QComboBox { background-color: lightgreen; }")
-                        self.falecido_combobox.setStyleSheet("QComboBox { background-color: lightgreen; }")
+                        self.apelidos_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.direccion_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.cidade_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.provincia_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.codigoPostal_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
+                        self.telefono_line_edit.setStyleSheet("QLineEdit { background-color: lightgreen; }")
                     else:
                         QMessageBox.warning(self, "Advertencia", "Selecciona al menos una fila para editar.")
                 else:
@@ -287,21 +417,44 @@ class MyMainWindow(QMainWindow):
                     row = selected_indexes[0].row()
 
                     # Obtener los nuevos datos de los campos
-                    dni = self.dni_line_edit.text()
+                    nCliente = self.nCliente_line_edit.text()
                     nome = self.nome_line_edit.text()
-                    edade = self.edade_line_edit.text()
-                    xenero = self.xenero_combobox.currentText()
-                    falecido = self.falecido_combobox.currentText()
+                    apelidos = self.apelidos_line_edit.text()
+                    direccion = self.direccion_line_edit.text()
+                    cidade = self.cidade_line_edit.text()
+                    provincia = self.provincia_line_edit.text()
+                    codigoPostal = self.codigoPostal_line_edit.text()
+                    telefono = self.telefono_line_edit.text()
 
-                    # Actualizar la tabla y la lista de datos con los nuevos datos
-                    self.table_model.setData(self.table_model.index(row, 0), dni)
+                    # Actualizar la tabla y la base de datos con los nuevos datos
+                    self.table_model.setData(self.table_model.index(row, 0), nCliente)
                     self.table_model.setData(self.table_model.index(row, 1), nome)
-                    self.table_model.setData(self.table_model.index(row, 2), edade)
-                    self.table_model.setData(self.table_model.index(row, 3), xenero)
-                    self.table_model.setData(self.table_model.index(row, 4), falecido)
+                    self.table_model.setData(self.table_model.index(row, 2), apelidos)
+                    self.table_model.setData(self.table_model.index(row, 3), telefono)
+                    self.table_model.setData(self.table_model.index(row, 4), direccion)
+                    self.table_model.setData(self.table_model.index(row, 5), cidade)
+                    self.table_model.setData(self.table_model.index(row, 6), provincia)
+                    self.table_model.setData(self.table_model.index(row, 7), codigoPostal)
+
+                    self.table_model.submitAll()  # Guardar cambios en la base de datos
 
                     # Deshabilitar líneas de texto y habilitar/deshabilitar/agregar/eliminar botones según sea necesario
-                    self.clear_and_disable_fields()
+                    self.nCliente_line_edit.clear()
+                    self.nome_line_edit.clear()
+                    self.apelidos_line_edit.clear()
+                    self.direccion_line_edit.clear()
+                    self.cidade_line_edit.clear()
+                    self.provincia_line_edit.clear()
+                    self.codigoPostal_line_edit.clear()
+                    self.telefono_line_edit.clear()
+                    self.nCliente_line_edit.setEnabled(False)
+                    self.nome_line_edit.setEnabled(False)
+                    self.apelidos_line_edit.setEnabled(False)
+                    self.direccion_line_edit.setEnabled(False)
+                    self.cidade_line_edit.setEnabled(False)
+                    self.provincia_line_edit.setEnabled(False)
+                    self.codigoPostal_line_edit.setEnabled(False)
+                    self.telefono_line_edit.setEnabled(False)
                     self.add_button.setEnabled(True)
                     self.save_button.setEnabled(False)
                     self.delete_button.setEnabled(True)
@@ -310,39 +463,23 @@ class MyMainWindow(QMainWindow):
                     self.success_label.setText("<html><b style='color: green;'>CAMBIO EXITOSO</b></html>")
 
                     # Refrescar la tabla para reflejar los cambios
-                    self.table_model.layoutChanged.emit()
+                    self.table_model.reset()
 
                     # Restablecer el nombre del botón y dejar de pintar en verde las líneas de texto
                     self.edit_button.setText("Editar")
-                    self.clear_field_styles()
+                    self.nCliente_line_edit.setStyleSheet("")
+                    self.nome_line_edit.setStyleSheet("")
+                    self.apelidos_line_edit.setStyleSheet("")
+                    self.direccion_line_edit.setStyleSheet("")
+                    self.cidade_line_edit.setStyleSheet("")
+                    self.provincia_line_edit.setStyleSheet("")
+                    self.codigoPostal_line_edit.setStyleSheet("")
+                    self.telefono_line_edit.setStyleSheet("")
                 else:
                     QMessageBox.warning(self, "Advertencia", "Selecciona al menos una fila para editar.")
         except Exception as e:
             print(f"Excepción en edit_data: {e}")
             QMessageBox.critical(self, "Error", f"Excepción en edit_data: {e}")
-
-    def clear_and_disable_fields(self):
-        self.dni_line_edit.clear()
-        self.nome_line_edit.clear()
-        self.edade_line_edit.clear()
-        self.xenero_combobox.setCurrentIndex(0)
-        self.falecido_combobox.setCurrentIndex(0)
-        self.dni_line_edit.setEnabled(False)
-        self.nome_line_edit.setEnabled(False)
-        self.edade_line_edit.setEnabled(False)
-        self.xenero_combobox.setEnabled(False)
-        self.falecido_combobox.setEnabled(False)
-        self.add_button.setEnabled(True)
-        self.save_button.setEnabled(False)
-        self.delete_button.setEnabled(True)
-        self.cancel_button.setEnabled(False)
-
-    def clear_field_styles(self):
-        self.dni_line_edit.setStyleSheet("")
-        self.nome_line_edit.setStyleSheet("")
-        self.edade_line_edit.setStyleSheet("")
-        self.xenero_combobox.setStyleSheet("")
-        self.falecido_combobox.setStyleSheet()
 
 
 if __name__ == "__main__":
